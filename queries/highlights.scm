@@ -1,13 +1,35 @@
 ; Symbol declaration
-"let" @keyword
-"struct" @keyword
-"enum" @keyword
-"fn" @keyword
-"using" @keyword
+[
+    "let"
+    "struct"
+    "fn"
+    "enum"
+    "abstract"
+    "using"
+    "pub"
+] @keyword
 
 (decl_fn name: (identifier) @function.method)
 
 (identifier) @variable
+
+; Control flow
+[
+    "if"
+    "unless"
+    "elif"
+    "elunless"
+    "else"
+    "for"
+    "while"
+    "loop"
+    "scope"
+    "return"
+    "yield"
+    "continue"
+    "restart"
+    "break"
+] @keyword.control
 
 ; Literals
 (string) @string
