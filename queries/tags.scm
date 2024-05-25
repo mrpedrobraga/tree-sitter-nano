@@ -1,7 +1,6 @@
-
 ; Declarations
-(decl_fn name: (identifier) @name) @definition.function
-(decl_let name: (identifier) @name) @definition.var
+(decl_fn name: (identifier)  @local.definition)
+(decl_let name: (identifier) @local.definition)
 
 ; References
 (identifier) @local.reference

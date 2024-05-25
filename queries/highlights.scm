@@ -5,7 +5,7 @@
 "fn" @keyword
 "using" @keyword
 
-(decl_fn name: (identifier) @function)
+(decl_fn name: (identifier) @function.method)
 
 (identifier) @variable
 
