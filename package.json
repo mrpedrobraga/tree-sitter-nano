@@ -37,7 +37,13 @@
     {
       "scope": "source.nano",
       "injection-regex": "^nano$",
-      "highlights": "highlights.scm",
+      "highlights": [
+        "queries/highlights.scm"
+      ],
+      "locals": [
+        "queries/locals.scm"
+      ],
+      "tags": "queries/tags.scm",
       "file-types": [
         "nn",
         "nano"

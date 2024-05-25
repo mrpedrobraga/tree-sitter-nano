@@ -1,1 +1,2 @@
-;;;;
+fn Type => "MyType";
+let val: Type = "MyType";
