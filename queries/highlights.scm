@@ -3,26 +3,47 @@
     "let"
     "alias"
     "struct"
-    "fn"
     "enum"
     "abstract"
-    "using"
-    "pub"
 ] @keyword
 
-(decl_fn name: (identifier) @function.method)
+["using"] @keyword.import
+
+["fn"] @keyword.function
+
+[
+    "pub"
+    "dyn"
+    "static"
+] @keyword.modifier
+
+(decl_fn name: (identifier) @function)
+(decl_fn_parameter_entry name: (identifier) @variable.parameter)
 
 (identifier) @variable
 
 ; Function Call
 (symbol_call callee: (expression
-    (symbol_ref (identifier) @function.method )
+    (symbol_ref (identifier) @function.call )
 ))
 
 ; Compiler directives
-(expression_directive callee: (identifier @macro)))
+(expression_directive directive: (identifier) @function.macro)
+(attribute_directive) @function.macro
 
 ; Control flow
+[
+    "scope"
+] @keyword.control
+
+[
+    "for"
+    "in"
+    "do"
+    "while"
+    "loop"
+] @keyword.repeat
+
 [
     "if"
     "unless"
@@ -30,35 +51,45 @@
     "elif"
     "elunless"
     "else"
-    "for"
-    "do"
-    "while"
-    "loop"
-    "scope"
+] @keyword.conditional
+
+[
     "return"
     "yield"
     "continue"
     "restart"
     "break"
-] @keyword.control
+]@keyword.return
 
 ; Operations
+
+[
+    "("
+    ")"
+    "{"
+    "}"
+    "@["
+    "["
+    "]"
+] @punctuation.bracket
+
+[
+    "|>"
+    "||>"
+    "<||"
+] @punctuation
 
 [
     ","
     ";"
     ":"
-    "("
-    ")"
-    "{"
-    "}"
-    "["
-    "]"
     "=>"
     "->"
     "!"
     "@"
 ] @operator
+
+["_"] @variable.parameter.builtin
 
 [
     "and"
@@ -66,15 +97,15 @@
     "not"
     "or"
     "xor"
-] @keyword
+] @keyword.operator
 
 ; Literals
-(string) @string
+(string) @string @spell
 (number) @number
 
 ; Comments
-(doc_comment_block) @comment
-(line_comment) @comment
+(doc_comment_block) @comment.documentation @spell
+(line_comment) @comment @spell
 
 ; Built-in constants
 "true" @constant.builtin
@@ -104,6 +135,6 @@
     "slot"
     "span"
     "list"
-] @type
+] @type.builtin
 ; Errors
 (ERROR) @error

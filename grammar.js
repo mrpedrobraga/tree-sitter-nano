@@ -21,6 +21,9 @@ module.exports = grammar({
         $.literal,
         $.semicolon_grouping,
         $.symbol_ref,
+        $.impl_type,
+        $.dyn_type,
+        $.static_type,
         $.symbol_call,
         $._control_flow,
       ),
@@ -71,7 +74,7 @@ module.exports = grammar({
         0,
         seq(
           "let",
-          field("assignee", $.decl_let_destructuring_pattern),
+          field("assignee", $._decl_let_destructuring_pattern),
           optional(seq(":", field("type", $.expression))),
           optional(seq("=", field("initializer", $.expression))),
         ),
@@ -86,7 +89,7 @@ module.exports = grammar({
           field("aliased_expression", $.expression),
         ),
       ),
-    decl_let_destructuring_pattern: ($) => choice($.identifier),
+    _decl_let_destructuring_pattern: ($) => choice($.identifier),
     decl_struct: ($) =>
       seq("struct", $.identifier, optional($.decl_struct_body)),
     decl_enum: ($) => seq("enum", $.identifier, optional($.decl_enum_body)),
@@ -108,7 +111,12 @@ module.exports = grammar({
         $.decl_fn_parameter_entry,
         repeat(seq(",", $.decl_fn_parameter_entry)),
       ),
-    decl_fn_parameter_entry: ($) => choice(seq($.identifier)),
+    decl_fn_parameter_entry: ($) =>
+      choice(
+        seq(field("name", $.identifier)),
+        seq(field("name", $.identifier), ":", field("type", $.expression)),
+        seq("scope", field("binding", $.expression)),
+      ),
     decl_fn_return_type: ($) => $.expression,
     decl_using: ($) => seq("using", field("import", $.identifier)),
 
@@ -119,8 +127,11 @@ module.exports = grammar({
         field("impl_subject", $.symbol_ref),
       ),
 
-    placeholder: ($) => "_",
+    placeholder: ($) => seq("_"),
     symbol_ref: ($) => choice($.placeholder, $.identifier),
+    impl_type: ($) => seq("impl", $.expression),
+    dyn_type: ($) => seq("dyn", $.expression),
+    static_type: ($) => seq("static", $.expression),
 
     semicolon_grouping: ($) => seq("(", $.expression_list_semicolon, ")"),
     expression_list_comma: ($) =>
