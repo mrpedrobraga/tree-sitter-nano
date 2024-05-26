@@ -16,10 +16,12 @@ module.exports = grammar({
     expressions: ($) => $.expression_list_semicolon,
     expression: ($) =>
       choice(
+        $.directive,
         $.declaration,
-        $.string,
+        $.literal,
         $.semicolon_grouping,
         $.symbol_ref,
+        $.symbol_call,
         $._control_flow,
       ),
 
@@ -27,32 +29,87 @@ module.exports = grammar({
     doc_comment_block: (_) => token(repeat1(seq(/##/, /[^\r\n]*\n/))),
     line_comment: (_) => token(seq(/#/, /[^\r\n]*/)),
 
+    directive: ($) => choice($.expression_directive, $.attribute_directive),
+    expression_directive: ($) =>
+      prec.right(
+        7,
+        seq(
+          token.immediate("@"),
+          field("directive", $.identifier),
+          seq(
+            "(",
+            field("parameters", optional($.symbol_call_site_parameter_list)),
+            ")",
+          ),
+        ),
+      ),
+    attribute_directive: ($) =>
+      prec.right(
+        8,
+        seq(
+          "@[",
+          field("attributes", optional($.symbol_call_site_parameter_list)),
+          "]",
+          field("subject", $.expression),
+        ),
+      ),
+
     declaration: ($) =>
       seq(
         optional("pub"),
-        choice($.decl_let, $.decl_struct, $.decl_enum, $.decl_fn, $.decl_using),
+        choice(
+          $.decl_let,
+          $.decl_alias,
+          $.decl_struct,
+          $.decl_enum,
+          $.decl_fn,
+          $.decl_using,
+        ),
       ),
     decl_let: ($) =>
       prec.right(
         0,
         seq(
           "let",
-          field("name", $.identifier),
+          field("assignee", $.decl_let_destructuring_pattern),
           optional(seq(":", field("type", $.expression))),
           optional(seq("=", field("initializer", $.expression))),
         ),
       ),
+    decl_alias: ($) =>
+      prec.right(
+        0,
+        seq(
+          "alias",
+          field("alias", $.identifier),
+          "=",
+          field("aliased_expression", $.expression),
+        ),
+      ),
+    decl_let_destructuring_pattern: ($) => choice($.identifier),
     decl_struct: ($) =>
       seq("struct", $.identifier, optional($.decl_struct_body)),
     decl_enum: ($) => seq("enum", $.identifier, optional($.decl_enum_body)),
     decl_abstract: ($) =>
       seq("abstract", $.identifier, optional($.decl_abstract_body)),
     decl_fn: ($) =>
-      seq(
-        "fn",
-        field("name", $.identifier),
-        optional(seq("=>", field("body", $.expression))),
+      prec.right(
+        0,
+        seq(
+          "fn",
+          field("name", $.identifier),
+          optional(seq("(", optional($.decl_fn_parameter_list), ")")),
+          optional(seq("->", field("return_type", $.decl_fn_return_type))),
+          optional(seq("=>", field("body", $.expression))),
+        ),
       ),
+    decl_fn_parameter_list: ($) =>
+      seq(
+        $.decl_fn_parameter_entry,
+        repeat(seq(",", $.decl_fn_parameter_entry)),
+      ),
+    decl_fn_parameter_entry: ($) => choice(seq($.identifier)),
+    decl_fn_return_type: ($) => $.expression,
     decl_using: ($) => seq("using", field("import", $.identifier)),
 
     impl: ($) =>
@@ -62,7 +119,8 @@ module.exports = grammar({
         field("impl_subject", $.symbol_ref),
       ),
 
-    symbol_ref: ($) => choice($.identifier),
+    placeholder: ($) => "_",
+    symbol_ref: ($) => choice($.placeholder, $.identifier),
 
     semicolon_grouping: ($) => seq("(", $.expression_list_semicolon, ")"),
     expression_list_comma: ($) =>
@@ -81,58 +139,235 @@ module.exports = grammar({
     decl_enum_body: ($) => seq("{", "}"),
     decl_abstract_body: ($) => seq("{", "}"),
 
-    _control_flow: ($) => choice($.return, $.yield, $.restart, $.continue),
+    symbol_call: ($) =>
+      prec.right(
+        7,
+        seq(
+          field("callee", $.expression),
+          choice(
+            seq(
+              "(",
+              field("parameters", optional($.symbol_call_site_parameter_list)),
+              ")",
+            ),
+            field("parameter", seq($.expression)),
+          ),
+        ),
+      ),
+    symbol_call_site_parameter_list: ($) =>
+      seq(
+        $.symbol_call_site_parameter_entry,
+        repeat(seq(",", $.symbol_call_site_parameter_entry)),
+      ),
+    symbol_call_site_parameter_entry: ($) =>
+      prec.right(
+        1,
+        choice(
+          seq(
+            optional(seq(field("parameter_name", $.identifier), ":")),
+            field("parameter_value", $.expression),
+          ),
+          seq("...", field("parameter_spread", $.expression)),
+        ),
+      ),
+
+    _control_flow: ($) =>
+      choice(
+        $.if,
+        $.for,
+        $.while,
+        $.scope,
+        $.loop,
+        $.return,
+        $.yield,
+        $.restart,
+        $.continue,
+        $.pipe,
+        $.curry_into_right,
+        $.curry_into_left,
+        $.monadic_bind,
+        $.arithmetic_operation,
+        $.logical_operation,
+        $.bitwise_operation,
+      ),
+
+    pipe: ($) =>
+      prec.left(
+        1,
+        seq(
+          field("subject", $.expression),
+          "|>",
+          field("predicate", $.expression),
+        ),
+      ),
+    curry_into_right: ($) =>
+      prec.right(
+        1,
+        seq(
+          field("subject", $.expression),
+          "||>",
+          field("predicate", $.expression),
+        ),
+      ),
+    curry_into_left: ($) =>
+      prec.left(
+        1,
+        seq(
+          field("predicate", $.expression),
+          "<||",
+          field("subject", $.expression),
+        ),
+      ),
+    monadic_bind: ($) => prec.left(10, seq($.expression, "!")),
+
+    arithmetic_operation: ($) =>
+      choice(
+        $.addition,
+        $.negation,
+        $.subtraction,
+        $.product,
+        $.floor_division,
+        $.division,
+        $.exponentiation,
+      ),
+    negation: ($) => prec.left(1, seq($.expression, "-", $.expression)),
+    addition: ($) => prec.left(2, seq($.expression, "+", $.expression)),
+    subtraction: ($) => prec.left(2, seq($.expression, "-", $.expression)),
+    product: ($) => prec.left(3, seq($.expression, "*", $.expression)),
+    floor_division: ($) => prec.left(3, seq($.expression, "//", $.expression)),
+    division: ($) => prec.left(3, seq($.expression, "/", $.expression)),
+    exponentiation: ($) => prec.left(4, seq($.expression, "**", $.expression)),
+
+    logical_operation: ($) => choice($.not, $.and, $.or),
+    not: ($) => seq("not", $.expression),
+    and: ($) =>
+      prec.left(1, seq($.expression, choice("and", "but"), $.expression)),
+    or: ($) => prec.left(2, seq($.expression, "or", $.expression)),
+    xor: ($) => prec.left(2, seq($.expression, "xor", $.expression)),
+    bitwise_operation: ($) => choice($.shift_bits_left, $.shift_bits_right),
+    shift_bits_left: ($) => prec.left(5, seq($.expression, "<<", $.expression)),
+    shift_bits_right: ($) =>
+      prec.left(5, seq($.expression, ">>", $.expression)),
 
     if: ($) =>
-      seq(
-        choice("if", "unless"),
-        field("condition", $.expression),
-        "then",
-        field("consequence", $.expression),
-        repeat($.elif),
-        optional($.else),
+      prec.right(
+        0,
+        seq(
+          choice("if", "unless"),
+          field("condition", $.expression),
+          "then",
+          field("consequence", $.expression),
+          repeat($.elif),
+          optional($.else),
+        ),
       ),
 
     elif: ($) =>
-      seq(
-        choice("elif", "elunless"),
-        field("condition", $.expression),
-        "then",
-        field("consequence", $.expression),
+      prec.right(
+        0,
+        seq(
+          choice("elif", "elunless"),
+          field("condition", $.expression),
+          "then",
+          field("consequence", $.expression),
+        ),
       ),
 
     else: ($) => seq("else", field("consequence", $.expression)),
 
     for: ($) =>
-      seq(
-        "for",
-        optional(seq(field("iteration_item_name", $.identifier), "in")),
-        field("iterator", $.expression),
-        "do",
-        field("body", $.expression),
+      prec.right(
+        0,
+        seq(
+          "for",
+          optional(seq(field("iteration_item_name", $.identifier), "in")),
+          field("iterator", $.expression),
+          "do",
+          field("body", $.expression),
+        ),
       ),
 
     while: ($) =>
-      seq(
-        choice("while", "until"),
-        field("condition", $.expression),
-        "do",
-        field("body", $.expression),
+      prec.right(
+        0,
+        seq(
+          choice("while", "until"),
+          field("condition", $.expression),
+          "do",
+          field("body", $.expression),
+        ),
       ),
 
     scope: ($) => seq("scope", $.expression),
     loop: ($) => seq("loop", $.expression),
 
-    return: ($) => seq("return", field("value", optional($.expression))),
-    yield: ($) => seq("yield", field("value", optional($.expression))),
+    return: ($) =>
+      prec.right(0, seq("return", field("value", optional($.expression)))),
+    yield: ($) =>
+      prec.right(0, seq("yield", field("value", optional($.expression)))),
     restart: ($) => seq("restart"),
-    continue: ($) => seq("continue", field("value", optional($.expression))),
-    break: ($) => seq("break", field("value", optional($.expression))),
+    continue: ($) =>
+      prec.right(0, seq("continue", field("value", optional($.expression)))),
+    break: ($) =>
+      prec.right(0, seq("break", field("value", optional($.expression)))),
 
+    literal: ($) => choice($.fn, $.string, $.number, $.bool),
+
+    fn: ($) =>
+      prec.right(
+        0,
+        seq(
+          "fn",
+          optional(seq("(", optional($.decl_fn_parameter_list), ")")),
+          optional(seq("=>", field("body", $.expression))),
+        ),
+      ),
     string: ($) => seq(/"/, /[^"]*/, /"/),
+    number: ($) =>
+      choice(
+        seq(
+          choice(
+            seq("0x", field("hex_digits", /[0-9A-Fa-f_]+/)),
+            seq("0b", field("binary_digits", /[0-1_]+/)),
+            field("decimal_digits", /[0-9_]+/),
+          ),
+          optional(field("suffix", $.int_suffix)),
+        ),
+      ),
     identifier: ($) => /[a-zA-Z_][a-zA-Z_0-9]*/,
 
-    type: ($) => choice("bool", "i32", "u32", "u8"),
+    type: ($) =>
+      choice(
+        "bool",
+        "text",
+        "slot",
+        "view",
+        "span",
+        "list",
+        $.int_suffix,
+        $.float_suffix,
+      ),
+    float_suffix: ($) => choice("f32", "f64"),
+    int_suffix: ($) =>
+      choice(
+        "u8",
+        "u16",
+        "u32",
+        "u64",
+        "u128",
+        "i8",
+        "i16",
+        "i32",
+        "i64",
+        "i128",
+        "usize",
+        "isize",
+        "nat8",
+        "nat16",
+        "nat32",
+        "nat64",
+        "nat128",
+      ),
     bool: ($) => choice("true", "false"),
   },
 });
