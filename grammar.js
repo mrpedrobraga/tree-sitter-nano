@@ -13,7 +13,7 @@ module.exports = grammar({
   rules: {
     source_file: ($) => $.expressions,
 
-    expressions: ($) => $.expression_list_semicolon,
+    expressions: ($) => $._expression_list_semicolon,
     expression: ($) =>
       choice(
         $.directive,
@@ -47,14 +47,12 @@ module.exports = grammar({
         ),
       ),
     attribute_directive: ($) =>
-      prec.right(
-        8,
-        seq(
-          "@[",
-          field("attributes", optional($.symbol_call_site_parameter_list)),
-          "]",
-          field("subject", $.expression),
-        ),
+      prec.right(8, seq($.attribute, field("subject", $.expression))),
+    attribute: ($) =>
+      seq(
+        "@[",
+        field("attributes", optional($.symbol_call_site_parameter_list)),
+        "]",
       ),
 
     declaration: ($) =>
@@ -90,11 +88,7 @@ module.exports = grammar({
         ),
       ),
     _decl_let_destructuring_pattern: ($) => choice($.identifier),
-    decl_struct: ($) =>
-      seq("struct", $.identifier, optional($.decl_struct_body)),
-    decl_enum: ($) => seq("enum", $.identifier, optional($.decl_enum_body)),
-    decl_abstract: ($) =>
-      seq("abstract", $.identifier, optional($.decl_abstract_body)),
+
     decl_fn: ($) =>
       prec.right(
         0,
@@ -120,6 +114,64 @@ module.exports = grammar({
     decl_fn_return_type: ($) => $.expression,
     decl_using: ($) => seq("using", field("import", $.identifier)),
 
+    decl_struct: ($) =>
+      seq(
+        "struct",
+        field("name", $.identifier),
+        optional(field("body", $._decl_struct_body)),
+      ),
+    decl_enum: ($) =>
+      seq(
+        "enum",
+        field("name", $.identifier),
+        optional(field("body", $._decl_enum_body)),
+      ),
+    decl_abstract: ($) =>
+      seq(
+        "abstract",
+        field("name", $.identifier),
+        optional($._decl_abstract_body),
+      ),
+    _decl_struct_body: ($) =>
+      choice($.decl_struct_body_curly, $.decl_struct_body_square),
+    decl_struct_body_curly: ($) =>
+      seq("{", $._decl_struct_body_entry_list, "}"),
+    decl_struct_body_square: ($) => seq("[", $._expression_list_comma, "]"),
+    _decl_struct_body_entry_list: ($) =>
+      seq(
+        $.decl_struct_field,
+        repeat(seq(",", $.decl_struct_field)),
+        optional(","),
+      ),
+    _decl_linear_struct_body_entry_list: ($) =>
+      seq(
+        $.decl_linear_struct_field,
+        repeat(seq(",", $.decl_linear_struct_field)),
+        optional(","),
+      ),
+    decl_struct_field: ($) =>
+      seq(
+        optional($.attribute),
+        optional("pub"),
+        field("name", $.identifier),
+        ":",
+        field("type", $.expression),
+      ),
+    decl_linear_struct_field: ($) => field("type", $.expression),
+    _decl_enum_body: ($) => seq("{", $._decl_enum_body_entry_list, "}"),
+    _decl_enum_body_entry_list: ($) =>
+      seq(
+        $.decl_enum_variant,
+        repeat(seq(",", $.decl_enum_variant)),
+        optional(","),
+      ),
+    decl_enum_variant: ($) =>
+      seq(
+        field("name", $.identifier),
+        field("body", optional($._decl_struct_body)),
+      ),
+    _decl_abstract_body: ($) => seq("{", "}"),
+
     impl: ($) =>
       seq(
         "impl",
@@ -133,22 +185,11 @@ module.exports = grammar({
     dyn_type: ($) => seq("dyn", $.expression),
     static_type: ($) => seq("static", $.expression),
 
-    semicolon_grouping: ($) => seq("(", $.expression_list_semicolon, ")"),
-    expression_list_comma: ($) =>
-      seq(
-        $.expression,
-        optional(seq(repeat(seq(",", $.expression)), optional(","))),
-      ),
-    expression_list_semicolon: ($) =>
-      seq(
-        $.expression,
-        optional(seq(repeat(seq(";", $.expression)), optional(";"))),
-      ),
-
-    decl_struct_body: ($) =>
-      choice(seq("{", "}"), seq("[", $.expression_list_comma, "]")),
-    decl_enum_body: ($) => seq("{", "}"),
-    decl_abstract_body: ($) => seq("{", "}"),
+    semicolon_grouping: ($) => seq("(", $._expression_list_semicolon, ")"),
+    _expression_list_comma: ($) =>
+      seq($.expression, repeat(seq(",", $.expression)), optional(",")),
+    _expression_list_semicolon: ($) =>
+      seq($.expression, repeat(seq(";", $.expression)), optional(";")),
 
     symbol_call: ($) =>
       prec.right(

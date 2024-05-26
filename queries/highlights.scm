@@ -59,7 +59,7 @@
     "continue"
     "restart"
     "break"
-]@keyword.return
+] @keyword.return
 
 ; Operations
 

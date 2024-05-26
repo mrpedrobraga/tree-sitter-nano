@@ -69,7 +69,7 @@
     }
   },
   {
-    "type": "attribute_directive",
+    "type": "attribute",
     "named": true,
     "fields": {
       "attributes": {
@@ -81,7 +81,13 @@
             "named": true
           }
         ]
-      },
+      }
+    }
+  },
+  {
+    "type": "attribute_directive",
+    "named": true,
+    "fields": {
       "subject": {
         "multiple": false,
         "required": true,
@@ -92,6 +98,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -187,11 +203,6 @@
     }
   },
   {
-    "type": "decl_abstract_body",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "decl_alias",
     "named": true,
     "fields": {
@@ -220,26 +231,70 @@
   {
     "type": "decl_enum",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "decl_enum_body",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
+    "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ",",
+            "named": false
+          },
+          {
+            "type": "decl_enum_variant",
+            "named": true
+          },
+          {
+            "type": "{",
+            "named": false
+          },
+          {
+            "type": "}",
+            "named": false
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
-    "type": "decl_enum_body",
+    "type": "decl_enum_variant",
     "named": true,
-    "fields": {}
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "decl_struct_body_curly",
+            "named": true
+          },
+          {
+            "type": "decl_struct_body_square",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "decl_fn",
@@ -390,7 +445,53 @@
     }
   },
   {
+    "type": "decl_linear_struct_field",
+    "named": true,
+    "fields": {
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "decl_struct",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "decl_struct_body_curly",
+            "named": true
+          },
+          {
+            "type": "decl_struct_body_square",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "decl_struct_body_curly",
     "named": true,
     "fields": {},
     "children": {
@@ -398,26 +499,58 @@
       "required": true,
       "types": [
         {
-          "type": "decl_struct_body",
-          "named": true
-        },
-        {
-          "type": "identifier",
+          "type": "decl_struct_field",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "decl_struct_body",
+    "type": "decl_struct_body_square",
     "named": true,
     "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "decl_struct_field",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": false,
       "types": [
         {
-          "type": "expression_list_comma",
+          "type": "attribute",
           "named": true
         }
       ]
@@ -718,45 +851,15 @@
     }
   },
   {
-    "type": "expression_list_comma",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "expression_list_semicolon",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "expressions",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "expression_list_semicolon",
+          "type": "expression",
           "named": true
         }
       ]
@@ -1132,11 +1235,11 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "expression_list_semicolon",
+          "type": "expression",
           "named": true
         }
       ]
