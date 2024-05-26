@@ -100,12 +100,13 @@
 ] @keyword.operator
 
 ; Literals
-(string) @string @spell
+(string) @string
 (number) @number
 
+
 ; Comments
-(doc_comment_block) @comment.documentation @spell
-(line_comment) @comment @spell
+(doc_comment_block) @comment.documentation
+(line_comment) @comment
 
 ; Built-in constants
 "true" @constant.builtin

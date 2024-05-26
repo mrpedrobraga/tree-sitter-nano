@@ -38,6 +38,7 @@
       "scope": "source.nano",
       "injection-regex": "^nano$",
       "highlights": "queries/highlights.scm",
+      "injections": "queries/injections.scm",
       "locals": "queries/locals.scm",
       "tags": "queries/tags.scm",
       "file-types": [

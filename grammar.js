@@ -32,7 +32,12 @@ module.exports = grammar({
     doc_comment_block: (_) => token(repeat1(seq(/##/, /[^\r\n]*\n/))),
     line_comment: (_) => token(seq(/#/, /[^\r\n]*/)),
 
-    directive: ($) => choice($.expression_directive, $.attribute_directive),
+    directive: ($) =>
+      choice(
+        $.expression_directive,
+        $.attribute_directive,
+        $.language_injection_directive,
+      ),
     expression_directive: ($) =>
       prec.right(
         7,
@@ -54,6 +59,17 @@ module.exports = grammar({
         field("attributes", optional($.symbol_call_site_parameter_list)),
         "]",
       ),
+
+    language_injection_directive: ($) =>
+      seq(
+        "@{",
+        field("language", $.injected_language_name),
+        "|",
+        field("content", $.injected_language_content),
+        "}",
+      ),
+    injected_language_name: ($) => $.identifier,
+    injected_language_content: (_) => /[^\}]*/,
 
     declaration: ($) =>
       seq(

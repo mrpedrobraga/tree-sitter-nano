@@ -7,8 +7,8 @@
 (decl_let assignee: ((identifier) @local.definition.var) (#set! "definition.var.scope" "parent"))
 (decl_fn_parameter_entry name: (identifier) @local.definition.parameter)
 
-(decl_struct name: (identifier) @declaration.type) @local.scope
-(decl_enum name: (identifier) @declaration.type) @local.scope
+(decl_struct name: (identifier) @local.definition.type) @local.scope
+(decl_enum name: (identifier) @local.definition.type) @local.scope
 (expressions) @local.scope
 
 ; References
